@@ -27,7 +27,7 @@
 		<jackson.version>2.18.0</jackson.version>
 		<pitest.version>1.17.0</pitest.version>
 		<pitest-junit5-plugin.version>1.2.1</pitest-junit5-plugin.version>
-		<graphql.version>22.3</graphql.version>
+		<graphql.version>230521-nf-execution</graphql.version>
 	</properties>
 
 	<distributionManagement>
