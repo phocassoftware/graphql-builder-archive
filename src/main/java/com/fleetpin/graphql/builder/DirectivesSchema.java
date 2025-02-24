@@ -13,15 +13,14 @@ package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.DataFetcherWrapper;
 import com.fleetpin.graphql.builder.annotations.Directive;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLAppliedDirective;
-import graphql.schema.GraphQLDirective;
+import graphql.schema.*;
+import jakarta.validation.constraints.Size;
+import org.reactivestreams.Publisher;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -29,7 +28,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.reactivestreams.Publisher;
+
+import static graphql.Scalars.GraphQLInt;
 
 class DirectivesSchema {
 
@@ -198,6 +198,12 @@ class DirectivesSchema {
 
 	public void addSchemaDirective(AnnotatedElement element, Class<?> location, Consumer<GraphQLAppliedDirective> builder) {
 		for (Annotation annotation : element.getAnnotations()) {
+			// convert all jakarta validation annotations to a corresponding constraint directive
+			if (annotation instanceof Size size) {
+				builder.accept(GraphQLAppliedDirective.newDirective().name("Constraint").argument(GraphQLAppliedDirectiveArgument
+					.newArgument().name("min").type(GraphQLInt).valueProgrammatic(size.min())).build());
+			}
+
 			var processor = this.directiveProcessors.get(annotation.annotationType());
 			if (processor != null) {
 				try {

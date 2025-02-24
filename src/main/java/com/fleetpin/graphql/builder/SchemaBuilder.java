@@ -14,13 +14,15 @@ package com.fleetpin.graphql.builder;
 import com.fleetpin.graphql.builder.annotations.*;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
+import jakarta.validation.constraints.Size;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.reflections.Reflections;
-import org.reflections.scanners.Scanners;
 
 public class SchemaBuilder {
 
@@ -133,6 +135,9 @@ public class SchemaBuilder {
 
 				Set<Class<?>> directivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
 				directivesTypes.addAll(reflections.getTypesAnnotatedWith(DataFetcherWrapper.class));
+
+				// make sure the Constraint directive is added to the schema
+				directivesTypes.add(Size.class);
 
 				Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
 				Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
