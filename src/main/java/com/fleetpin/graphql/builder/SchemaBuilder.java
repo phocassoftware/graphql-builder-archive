@@ -18,6 +18,7 @@ import jakarta.validation.constraints.Size;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -133,44 +134,7 @@ public class SchemaBuilder {
 
 				Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
 
-				Set<Class<?>> directivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
-				directivesTypes.addAll(reflections.getTypesAnnotatedWith(DataFetcherWrapper.class));
-
-				// make sure the Constraint directive is added to the schema
-				directivesTypes.add(Size.class);
-
-				Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
-				Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
-				List<RestrictTypeFactory<?>> globalRestricts = new ArrayList<>();
-
-				for (var r : restrict) {
-					Restrict annotation = EntityUtil.getAnnotation(r, Restrict.class);
-					var factoryClass = annotation.value();
-					var factory = factoryClass.getConstructor().newInstance();
-					if (!factory.extractType().isAssignableFrom(r)) {
-						throw new RuntimeException(
-							"Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r
-						);
-					}
-					globalRestricts.add(factory);
-				}
-
-				for (var r : restricts) {
-					Restricts annotations = EntityUtil.getAnnotation(r, Restricts.class);
-					for (Restrict annotation : annotations.value()) {
-						var factoryClass = annotation.value();
-						var factory = factoryClass.getConstructor().newInstance();
-
-						if (!factory.extractType().isAssignableFrom(r)) {
-							throw new RuntimeException(
-								"Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r
-							);
-						}
-						globalRestricts.add(factory);
-					}
-				}
-
-				DirectivesSchema directivesSchema = DirectivesSchema.build(globalRestricts, directivesTypes); // Entry point for directives
+				DirectivesSchema directivesSchema = getDirectivesSchema(reflections);
 
 				Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
 
@@ -183,7 +147,7 @@ public class SchemaBuilder {
 				endPoints.addAll(queries);
 
 				types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
-				types.removeIf(t -> t.isAnonymousClass());
+				types.removeIf(Class::isAnonymousClass);
 
 				return new SchemaBuilder(dataFetcherRunner, scalars, directivesSchema, authorizer)
 					.processTypes(types)
@@ -192,6 +156,57 @@ public class SchemaBuilder {
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
+		}
+
+		private static DirectivesSchema getDirectivesSchema(Reflections reflections) throws ReflectiveOperationException {
+			Set<Class<?>> directivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+			directivesTypes.addAll(reflections.getTypesAnnotatedWith(DataFetcherWrapper.class));
+
+			addAllJakartaAnnotations(directivesTypes);
+
+			List<RestrictTypeFactory<?>> globalRestricts = getGlobalRestricts(reflections);
+
+			return DirectivesSchema.build(globalRestricts, directivesTypes); // Entry point for directives
+		}
+
+		private static void addAllJakartaAnnotations(Set<Class<?>> directivesTypes) {
+			// make sure the Constraint directive is added to the schema
+			directivesTypes.add(Size.class);
+		}
+
+		private static List<RestrictTypeFactory<?>> getGlobalRestricts(Reflections reflections)
+			throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+			Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
+			Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
+			List<RestrictTypeFactory<?>> globalRestricts = new ArrayList<>();
+
+			for (var r : restrict) {
+				Restrict annotation = EntityUtil.getAnnotation(r, Restrict.class);
+				var factoryClass = annotation.value();
+				var factory = factoryClass.getConstructor().newInstance();
+				if (!factory.extractType().isAssignableFrom(r)) {
+					throw new RuntimeException(
+						"Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r
+					);
+				}
+				globalRestricts.add(factory);
+			}
+
+			for (var r : restricts) {
+				Restricts annotations = EntityUtil.getAnnotation(r, Restricts.class);
+				for (Restrict annotation : annotations.value()) {
+					var factoryClass = annotation.value();
+					var factory = factoryClass.getConstructor().newInstance();
+
+					if (!factory.extractType().isAssignableFrom(r)) {
+						throw new RuntimeException(
+							"Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r
+						);
+					}
+					globalRestricts.add(factory);
+				}
+			}
+			return globalRestricts;
 		}
 	}
 }

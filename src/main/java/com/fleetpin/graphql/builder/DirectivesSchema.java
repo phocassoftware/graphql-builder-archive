@@ -24,9 +24,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static graphql.Scalars.GraphQLInt;
@@ -179,30 +177,9 @@ class DirectivesSchema {
 		}
 	}
 
-	private static <T> CompletableFuture<List<T>> all(List<CompletableFuture<T>> toReturn) {
-		return CompletableFuture
-			.allOf(toReturn.toArray(CompletableFuture[]::new))
-			.thenApply(__ ->
-				toReturn
-					.stream()
-					.map(m -> {
-						try {
-							return m.get();
-						} catch (InterruptedException | ExecutionException e) {
-							throw new RuntimeException(e);
-						}
-					})
-					.collect(Collectors.toList())
-			);
-	}
-
 	public void addSchemaDirective(AnnotatedElement element, Class<?> location, Consumer<GraphQLAppliedDirective> builder) {
 		for (Annotation annotation : element.getAnnotations()) {
-			// convert all jakarta validation annotations to a corresponding constraint directive
-			if (annotation instanceof Size size) {
-				builder.accept(GraphQLAppliedDirective.newDirective().name("Constraint").argument(GraphQLAppliedDirectiveArgument
-					.newArgument().name("min").type(GraphQLInt).valueProgrammatic(size.min())).build());
-			}
+			convertJakartaAnnotationsToConstraintDirectives(builder, annotation);
 
 			var processor = this.directiveProcessors.get(annotation.annotationType());
 			if (processor != null) {
@@ -212,6 +189,14 @@ class DirectivesSchema {
 					throw new RuntimeException("Could not process applied directive: " + location.getName());
 				}
 			}
+		}
+	}
+
+	private static void convertJakartaAnnotationsToConstraintDirectives(Consumer<GraphQLAppliedDirective> builder, Annotation annotation) {
+		// convert all jakarta validation annotations to a corresponding constraint directive
+		if (annotation instanceof Size size) {
+			builder.accept(GraphQLAppliedDirective.newDirective().name("Constraint").argument(GraphQLAppliedDirectiveArgument
+				.newArgument().name("min").type(GraphQLInt).valueProgrammatic(size.min())).build());
 		}
 	}
 
