@@ -12,11 +12,12 @@
 package com.fleetpin.graphql.builder.type.directive;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.Mutation;
 import com.fleetpin.graphql.builder.annotations.Query;
+import jakarta.validation.constraints.Size;
 
 @Entity
 public class Cat {
-
 	public boolean isCalico() {
 		return true;
 	}
@@ -33,6 +34,11 @@ public class Cat {
 	@Capture(color = "meow")
 	public static Cat getCat() {
 		return new Cat();
+	}
+
+	@Mutation
+	public static String setName(@Size(min = 3) String name) {
+		return name;
 	}
 
 	@Query

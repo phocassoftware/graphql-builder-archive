@@ -13,6 +13,7 @@ package com.fleetpin.graphql.builder;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+
 import java.lang.annotation.Annotation;
 
 public interface DirectiveCaller<T extends Annotation> extends DirectiveOperation<T> {
