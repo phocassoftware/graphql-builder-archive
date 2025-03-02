@@ -2,11 +2,17 @@ package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
 import graphql.introspection.Introspection;
-import graphql.schema.*;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLDirective;
+import jakarta.validation.Constraint;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,14 +28,21 @@ public class DirectiveProcessor {
 
 	public static DirectiveProcessor build(EntityProcessor entityProcessor, Class<? extends Annotation> directive) {
 		var builder = GraphQLDirective.newDirective().name(directive.getSimpleName());
-		var validLocations = directive.getAnnotation(Directive.class).value();
+		Introspection.DirectiveLocation[] validLocations = null;
+
+		if (!directive.isAnnotationPresent(Directive.class) && directive == Constraint.class) {
+			validLocations = new Introspection.DirectiveLocation[] { Introspection.DirectiveLocation.ARGUMENT_DEFINITION };
+		} else {
+			validLocations = directive.getAnnotation(Directive.class).value();
+
+			// Check for repeatable tag in annotation and add it
+			builder.repeatable(directive.getAnnotation(Directive.class).repeatable());
+		}
+
 		// loop through and add valid locations
 		for (Introspection.DirectiveLocation location : validLocations) {
 			builder.validLocation(location);
 		}
-
-		// Check for repeatable tag in annotation and add it
-		builder.repeatable(directive.getAnnotation(Directive.class).repeatable());
 
 		// Go through each argument and add name/type to directive
 		var methods = directive.getDeclaredMethods();

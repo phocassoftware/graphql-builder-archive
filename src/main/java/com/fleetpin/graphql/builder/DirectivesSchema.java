@@ -14,6 +14,7 @@ package com.fleetpin.graphql.builder;
 import com.fleetpin.graphql.builder.annotations.DataFetcherWrapper;
 import com.fleetpin.graphql.builder.annotations.Directive;
 import graphql.schema.*;
+import jakarta.validation.Constraint;
 import jakarta.validation.constraints.Size;
 import org.reactivestreams.Publisher;
 
@@ -61,7 +62,7 @@ class DirectivesSchema {
 				}
 				continue;
 			}
-			if (!directiveType.isAnnotationPresent(Directive.class)) {
+			if (!directiveType.isAnnotationPresent(Directive.class) && directiveType != Constraint.class) {
 				continue;
 			}
 			if (!directiveType.isAnnotation()) {
@@ -201,9 +202,9 @@ class DirectivesSchema {
 	}
 
 	public void processDirectives(EntityProcessor ep) { // Replacement of processSDL
-		Map<Class<? extends Annotation>, DirectiveProcessor> directiveProcessors = new HashMap<>();
+		Map<Class<? extends Annotation>, DirectiveProcessor> directiveProcessorsMap = new HashMap<>();
 
-		this.directives.forEach(dir -> directiveProcessors.put(dir, DirectiveProcessor.build(ep, dir)));
-		this.directiveProcessors = directiveProcessors;
+		this.directives.forEach(dir -> directiveProcessorsMap.put(dir, DirectiveProcessor.build(ep, dir)));
+		this.directiveProcessors = directiveProcessorsMap;
 	}
 }

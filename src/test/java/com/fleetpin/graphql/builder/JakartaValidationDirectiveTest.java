@@ -43,9 +43,10 @@ public class JakartaValidationDirectiveTest {
 		List<LinkedHashMap<String, Object>> dir = (List<LinkedHashMap<String, Object>>) ((Map<String, Object>) response.get("__schema")).get("directives");
 		LinkedHashMap<String, Object> constraint = dir.stream().filter(map -> map.get("name").equals("Constraint")).collect(Collectors.toList()).get(0);
 
-		assertEquals(8, dir.size());
+		assertEquals(9, dir.size());
 		assertEquals("ARGUMENT_DEFINITION", ((List<String>) constraint.get("locations")).get(0));
 		assertEquals(1, ((List<Object>) constraint.get("args")).size());
+		assertEquals("{name=validatedBy}", ((List<Object>) constraint.get("args")).getFirst().toString());
 		//setName(name: String! @Size(min : 3)): Int!
 		//directive @Constraint(name: String!) on ARGUMENT_DEFINITION
 	}
