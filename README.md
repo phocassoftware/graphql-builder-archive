@@ -1,4 +1,7 @@
 # graphql-builder
+Project moved to https://github.com/phocassoftware/graphql-builder
+
+
 Builds a graphql schema from a model using reflection.
 It reads parameter and method names of the java classes to build the schema.
 It requires java11 and `-parameters` compile argument. This allows method argument names to be read removing the need for an annotations per argument.
